@@ -118,6 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     needs:
+      - verify
       - check
       - build
       - package
