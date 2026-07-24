@@ -19,7 +19,7 @@
 
     <scm>
         <connection>scm:git:https://github.com/pgatzka/example-maven.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/pgatzka/example-maven.git</developerConnection>
+        <developerConnection>scm:git:https://github.com/pgatzka/example-maven.git</developerConnection>
         <url>https://github.com/pgatzka/example-maven</url>
         <tag>example-1.0.0</tag>
     </scm>
