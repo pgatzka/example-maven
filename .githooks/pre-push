@@ -1,0 +1,10 @@
+#!/bin/sh
+
+##### SPOTLESS HOOK START #####
+SPOTLESS_EXECUTOR=./mvnw
+if ! $SPOTLESS_EXECUTOR spotless:check -q; then
+    echo 1>&2 "spotless found problems, running spotless:apply; commit the result and re-push"
+    $SPOTLESS_EXECUTOR spotless:apply -q
+    exit 1
+fi
+##### SPOTLESS HOOK END #####
