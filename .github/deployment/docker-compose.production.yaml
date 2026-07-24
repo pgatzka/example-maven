@@ -16,8 +16,5 @@ services:
       timeout: 3s
       retries: 5
       start_period: 30s
-    depends_on:
-      postgres:
-        condition: service_healthy
     volumes:
       - ${DEPLOYMENT_DIRECTORY}/logs:/var/log/application
