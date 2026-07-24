@@ -18,6 +18,13 @@
         <java.version>25</java.version>
     </properties>
 
+    <scm>
+        <connection>scm:git:https://github.com/pgatzka/example-maven.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/pgatzka/example-maven.git</developerConnection>
+        <url>https://github.com/pgatzka/example-maven</url>
+        <tag>HEAD</tag>
+    </scm>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -65,6 +72,11 @@
                         <palantirJavaFormat/>
                     </java>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>3.3.1</version>
             </plugin>
         </plugins>
     </build>
