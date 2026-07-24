@@ -1,4 +1,4 @@
-name: CI
+name: Release
 
 run-name: >
   ${{ github.workflow }}: ${{ github.event_name }} for ${{ github.ref_name }} by @${{ github.actor }}
