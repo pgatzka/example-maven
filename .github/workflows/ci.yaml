@@ -6,7 +6,7 @@ run-name: >
 on:
   push:
     tags:
-      - '*'
+      - 'v*'
     branches:
       - main
   pull_request:
@@ -106,7 +106,7 @@ jobs:
           push: false
           tags: |
             ${{ steps.image.outputs.name }}:${{ needs.build.outputs.version }}
-            ${{ steps.image.outputs.name }}:snapshot
+            ${{ steps.image.outputs.name }}:${{ startsWith(github.ref, 'refs/tags/') && 'latest' || 'snapshot' }}
             ${{ steps.image.outputs.name }}:${{ github.event.pull_request.head.sha || github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -120,7 +120,7 @@ jobs:
   publish:
     name: Publish
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
     needs:
       - verify
       - check
@@ -146,13 +146,13 @@ jobs:
         run: docker push --all-tags "${{ needs.package.outputs.name }}"
   deploy:
     name: Deploy
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
     needs:
       - publish
     uses: ./.github/workflows/deploy.yaml
     with:
-      image_tag: snapshot
-      environment: ci
+      image_tag: ${{ startsWith(github.ref, 'refs/tags/') && 'latest' || 'snapshot' }}
+      environment: ${{ startsWith(github.ref, 'refs/tags/') && 'production' || 'ci' }}
     secrets: inherit
   gate:
     name: Gate
