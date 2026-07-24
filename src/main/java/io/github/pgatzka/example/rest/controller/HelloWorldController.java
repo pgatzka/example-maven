@@ -13,5 +13,4 @@ public class HelloWorldController {
     public ResponseEntity<HelloWorldResponse> helloWorld() {
         return ResponseEntity.ok(new HelloWorldResponse(OffsetDateTime.now()));
     }
-
 }
