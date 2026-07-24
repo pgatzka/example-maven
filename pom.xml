@@ -11,7 +11,7 @@
 
     <groupId>io.github.pgatzka</groupId>
     <artifactId>example</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3-SNAPSHOT</version>
 
     <properties>
         <java.version>25</java.version>
@@ -21,7 +21,7 @@
         <connection>scm:git:https://github.com/pgatzka/example-maven.git</connection>
         <developerConnection>scm:git:https://github.com/pgatzka/example-maven.git</developerConnection>
         <url>https://github.com/pgatzka/example-maven</url>
-        <tag>v1.0.2</tag>
+        <tag>example-1.0.0</tag>
     </scm>
 
     <dependencies>
