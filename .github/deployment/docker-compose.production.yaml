@@ -1,0 +1,23 @@
+name: ${COMPOSE_PROJECT_NAME}
+
+services:
+  application:
+    image: ${APP_IMAGE}
+    restart: unless-stopped
+    user: "${ENV_APPLICATION_USER_ID}:${ENV_APPLICATION_GROUP_ID}"
+    environment:
+      SPRING_PROFILES_ACTIVE: production
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=70.0 -XX:+ExitOnOutOfMemoryError -XX:+UseParallelGC -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/var/log/application"
+    ports:
+      - '${ENV_APPLICATION_PORT}:8080'
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ${DEPLOYMENT_DIRECTORY}/logs:/var/log/application

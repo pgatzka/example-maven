@@ -1,0 +1,166 @@
+name: CI
+
+run-name: >
+  ${{ github.workflow }}: ${{ github.event_name }} for ${{ github.ref_name }} by @${{ github.actor }}
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: maven
+      - name: Verify
+        run: ./mvnw -B clean spotless:check
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: maven
+      - name: Check
+        run: ./mvnw -B clean verify
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.evaluate-version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: maven
+      - name: Build
+        run: ./mvnw -B clean package -DskipTests
+      - name: Upload jar
+        uses: actions/upload-artifact@v7
+        with:
+          path: target/*.jar
+          retention-days: 7
+          name: jar
+      - name: Evaluate Version
+        id: evaluate-version
+        run: |
+          VERSION=$(./mvnw -B -q help:evaluate -Dexpression=project.version -DforceStdout | tail -1)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+  package:
+    name: Package
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    outputs:
+      name: ${{ steps.image.outputs.name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Download Jar
+        uses: actions/download-artifact@v8
+        with:
+          name: jar
+          path: target
+      - name: Resolve image name
+        id: image
+        run: echo "name=${IMAGE_NAME,,}" >> "$GITHUB_OUTPUT"
+        env:
+          IMAGE_NAME: ${{ env.REGISTRY }}/${{ github.repository }}
+      - name: Package
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          tags: |
+            ${{ steps.image.outputs.name }}:${{ needs.build.outputs.version }}
+            ${{ steps.image.outputs.name }}:snapshot
+            ${{ steps.image.outputs.name }}:${{ github.event.pull_request.head.sha || github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          outputs: type=docker,dest=/tmp/image.tar
+      - name: Upload Image
+        uses: actions/upload-artifact@v7
+        with:
+          path: /tmp/image.tar
+          retention-days: 7
+          name: image
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs:
+      - check
+      - build
+      - package
+    permissions:
+      packages: write
+    steps:
+      - name: Download Image
+        uses: actions/download-artifact@v8
+        with:
+          name: image
+          path: /tmp
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Load Image
+        run: docker load -i /tmp/image.tar
+      - name: Push Image
+        run: docker push --all-tags "${{ needs.package.outputs.name }}"
+  deploy:
+    name: Deploy
+    if: github.ref == 'refs/heads/main'
+    needs:
+      - publish
+    uses: ./.github/workflows/deploy.yaml
+    with:
+      image_tag: snapshot
+      environment: ci
+    secrets: inherit
+  gate:
+    name: Gate
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - verify
+      - check
+      - build
+      - package
+    steps:
+      - name: Gate
+        run: |
+          echo '${{ toJSON(needs) }}' \
+            | jq -e 'all(.[]; .result == "success")' \
+            || exit 1
