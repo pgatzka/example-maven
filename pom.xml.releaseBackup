@@ -78,7 +78,7 @@
                 <artifactId>maven-release-plugin</artifactId>
                 <version>3.3.1</version>
                 <configuration>
-                    <projectVersionPolicyId>default</projectVersionPolicyId>
+                    <projectVersionPolicyId>defualt</projectVersionPolicyId>
                 </configuration>
             </plugin>
         </plugins>
